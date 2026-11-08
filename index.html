@@ -46,7 +46,7 @@ fieldset{border:0;padding:0;margin:0}legend{color:var(--muted);font-size:14px;ma
 .strikes{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:15px}
 .strikes i{width:18px;height:18px;border-radius:50%;border:2px solid #111;background:#3a2320}.strikes i.on{background:var(--red);box-shadow:0 0 10px var(--red)}
 .hb{display:flex;gap:8px;margin-left:auto}
-.mods{display:grid;gap:14px;margin:0 6px}
+.mods{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin:0 6px}.mod{min-width:0}
 .mod{position:relative;background:linear-gradient(#30352d,#262a23);border:2px solid #14170f;border-radius:10px;padding:14px;display:grid;gap:12px;box-shadow:inset 0 2px 0 #ffffff14}
 .mod.done{border-color:var(--ok)}.mod.done .mb{opacity:.5}
 .mh{display:flex;align-items:center;gap:10px}.mh h2{font-size:19px;flex:1}
@@ -87,7 +87,7 @@ fieldset{border:0;padding:0;margin:0}legend{color:var(--muted);font-size:14px;ma
 .box{display:grid;place-items:center;width:54px;height:54px;border:3px solid #67707c;color:#67707c;font:700 38px var(--fh)}
 .paper p{font:700 clamp(34px,7vw,46px)/1.15 var(--fh);color:var(--ink)}
 .paper p b{text-decoration:underline wavy;text-decoration-thickness:1px;text-underline-offset:5px}
-@media(min-width:760px){.mods{grid-template-columns:1fr 1fr}.mod.wide{grid-column:1/-1}}
+@media(min-width:760px){.mods{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.mod.wide{grid-column:1/-1}}
 @media(prefers-reduced-motion:reduce){.timer.low b,.shake,.ant::after{animation:none}}
 [hidden]{display:none!important}
 .top{max-width:900px;margin:0 auto 14px;display:flex;align-items:center;justify-content:space-between}
@@ -217,6 +217,42 @@ body.wide #app{max-width:1200px}
 .jform input{min-height:60px;background:var(--scr);border:2px solid #000;border-radius:10px;color:var(--okl);font:700 28px var(--fm);text-align:center;padding:8px 12px;width:100%}
 #jName{font-family:var(--fd);color:var(--fg)}
 .screen#wait{padding-block:60px}
+
+/* defter / karalama paneli */
+.gwrap{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}.gwrap>*{min-width:0}
+.dock{background:var(--metal);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 10px 30px #0008}
+.dtabs{display:flex;gap:8px;padding:8px;background:#0003}
+.dtabs .btn{flex:1;min-height:42px}.dtabs .btn[aria-pressed=true]{background:var(--fg);color:#1d231b}
+#dockClose{flex:none;min-width:48px}
+.dpane{padding:10px}
+.dock .paper{padding:12px 14px}.dock .paper ol{gap:8px}
+.dock .paper p{font-size:clamp(24px,5vw,32px)}.dock .paper .box{width:40px;height:40px;font-size:26px}.dock .paper li{min-height:46px;gap:12px}
+.dock .tools{margin-bottom:8px}
+.dock .cv{height:min(44vh,340px)}
+@media(min-width:960px){
+body.gaming #app,body.gaming .top{max-width:1280px}
+.gwrap{grid-template-columns:minmax(0,1fr) 420px}
+.dock{position:sticky;top:12px}
+#dockClose{display:none}
+.dpane{max-height:calc(100vh - 90px);overflow:auto}
+}
+@media(max-width:959px){
+.dock{position:fixed;left:8px;right:8px;bottom:max(8px,env(safe-area-inset-bottom));z-index:20;max-width:900px;margin:0 auto}
+.dpane{max-height:38vh;overflow:auto}
+.dock .cv{height:min(26vh,200px)}
+.dock:not(.open) .dpane,.dock:not(.open) #dockClose{display:none}
+}
+/* tur sistemi */
+.rnd{font-size:22px;font-weight:700;margin-bottom:6px}
+.stats{font-size:22px;font-weight:700;margin-bottom:14px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.pc2{background:var(--metal2);border:2px solid var(--line);border-radius:12px;padding:10px;display:grid;gap:4px;justify-items:center;transition:background .3s,border-color .3s}
+.pc2.safe{border-color:var(--ok);background:#1f3a22}.pc2.boom{border-color:var(--red);background:#3a1d1a}.pc2.dead{opacity:.4}
+.pc2 .ic{font-size:28px;line-height:1}.pc2 b{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hrt{color:var(--redl);letter-spacing:2px}
+#wClock{font:700 clamp(36px,12vw,64px) var(--fm);color:var(--sig);min-height:1.2em}
+#wTitle{font-size:clamp(30px,8vw,52px)}
+.msg.hint{color:var(--okl);font-size:17px;font-weight:700}
 </style>
 <div class="top"><select id="lang" aria-label="Dil / Language"><option value="tr">Türkçe</option><option value="en">English</option></select><span class="coin">🪙 <b id="coins">0</b></span></div>
 <main id="app">
@@ -238,12 +274,12 @@ body.wide #app{max-width:1200px}
 <p style="color:var(--muted);margin-bottom:20px" data-i="hwn"></p>
 <button id="howBack" class="btn big" type="button" data-i="back"></button>
 </section>
-<section id="game" class="screen" hidden>
+<section id="game" class="screen" hidden><div class="gwrap">
 <div class="bomb" id="bombEl">
 <i class="scr s1"></i><i class="scr s2"></i><i class="scr s3"></i><i class="scr s4"></i><i class="ant"></i>
 <div class="deco" id="deco"></div><header class="hud">
 <div class="timer" id="timer" role="timer"></div><span class="coin" id="goal"></span><span class="flash" id="flash" aria-live="polite"></span>
-<div class="hb"><button id="bookBtn" class="btn small" type="button" aria-expanded="false" data-i="book"></button><button id="padBtn" class="btn small" type="button" aria-expanded="false" data-i="pad"></button><button id="quit" class="btn small" type="button" data-i="menu"></button></div>
+<div class="hb"><button id="quit" class="btn small" type="button" data-i="menu"></button></div>
 </header>
 <div class="mods">
 <article class="mod" id="m1"><header class="mh"><span class="tag">1</span><h2 data-i="m1"></h2><i class="led"></i></header>
@@ -263,7 +299,11 @@ body.wide #app{max-width:1200px}
 <button id="swOk" class="btn primary" type="button" data-i="ok"></button><p class="msg" id="msg5"></p></div></article><article class="mod" id="m6"><header class="mh"><span class="tag">6</span><h2 data-i="m6"></h2><i class="led"></i></header><div class="mb"><div class="tape" id="q6"></div><div class="choices" id="ch6"></div><p class="msg" id="msg6"></p></div></article>
 </div>
 </div>
-</section>
+<aside id="dock" class="dock open" aria-label="Defter">
+<div class="dtabs"><button id="tabBook" class="btn small" type="button" aria-pressed="true">📖 <span data-i="book"></span></button><button id="tabPad" class="btn small" type="button" aria-pressed="false">✏️ <span data-i="pad"></span></button><button id="dockClose" class="btn small" type="button" aria-label="close">▾</button></div>
+<div id="book" class="dpane"><div class="paper"><ol id="rules"></ol></div></div>
+<div id="sketch" class="dpane" hidden><div class="tools"><button id="penBtn" class="btn small" type="button" aria-pressed="true" data-i="pen"></button><button id="eraBtn" class="btn small" type="button" aria-pressed="false" data-i="era"></button><button id="clrBtn" class="btn small" type="button" data-i="clr"></button></div><canvas id="cv" class="cv"></canvas></div>
+</aside></div></section>
 <section id="end" class="screen end" hidden aria-live="polite">
 <h2 id="endTitle" class="lose"></h2><p id="endText" style="font-size:18px"></p><ul class="ans" id="answers"></ul>
 <div class="stack"><button id="toMap" class="btn primary big" type="button" data-i="map"></button><button id="toMenu" class="btn big" type="button" data-i="menu"></button></div>
@@ -279,11 +319,11 @@ body.wide #app{max-width:1200px}
 <div class="hbar"><h2 data-i="hostT"></h2><button id="hClose" class="btn small" type="button" data-i="closeRoom"></button></div>
 <div id="hLobby">
 <div class="pinbox"><small data-i="pinLbl"></small><div class="pcode" id="hPin" aria-live="polite"></div><p class="joinat" id="hUrl"></p></div>
-<div class="hopts"><label class="sel"><span data-i="dur"></span><select id="hDur"><option value="3">3</option><option value="5" selected>5</option><option value="10">10</option><option value="15">15</option></select></label><button id="hTop" class="btn small" type="button"></button></div>
+<div class="hopts"><label class="sel"><span data-i="rounds"></span><select id="hRounds"><option value="10">10</option><option value="15" selected>15</option><option value="20">20</option></select></label><label class="sel"><span data-i="lives"></span><select id="hLives"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></label><button id="hTop" class="btn small" type="button"></button></div>
 <p class="pc" id="hCount"></p><div class="chips" id="hChips"></div>
 <button id="hStart" class="btn primary big" type="button" data-i="startRoom"></button><p class="msg" id="hMsg" aria-live="polite"></p>
 </div>
-<div id="hPlay" hidden><div class="timer big" id="hTimer" role="timer"></div><ol class="lb" id="hLb"></ol><button id="hEnd" class="btn" type="button" data-i="endNow"></button></div>
+<div id="hPlay" hidden><p class="rnd" id="hRound"></p><div class="timer big" id="hTimer" role="timer"></div><p class="stats" id="hStats"></p><div class="pgrid" id="hGrid"></div><button id="hEnd" class="btn" type="button" data-i="endNow"></button></div>
 <div id="hDone" hidden><h2 class="win" data-i="podium"></h2><div class="podium" id="hPod"></div><ol class="lb" id="hLb2"></ol><div class="stack"><button id="hNew" class="btn primary big" type="button" data-i="newGame"></button></div></div>
 </section>
 <section id="join" class="screen join" hidden>
@@ -291,24 +331,19 @@ body.wide #app{max-width:1200px}
 <form class="jform" id="jForm" autocomplete="off"><input id="jPin" inputmode="numeric" pattern="[0-9]*" maxlength="6" aria-label="PIN"><input id="jName" maxlength="14" aria-label="Name"><button id="jGo" class="btn primary big" type="submit" data-i="joinGo"></button><p class="msg" id="jMsg" aria-live="polite"></p></form>
 <button id="jBack" class="btn" type="button" data-i="back"></button>
 </section>
-<section id="wait" class="screen end" hidden aria-live="polite"><h2 id="wTitle"></h2><p id="wSub" style="font-size:18px;color:var(--muted)"></p><p class="pc" id="wCount"></p><button id="wLeave" class="btn" type="button" data-i="leave"></button></section>
+<section id="wait" class="screen end" hidden aria-live="polite"><h2 id="wTitle"></h2><p id="wSub" style="font-size:18px;color:var(--muted)"></p><p class="pc" id="wCount"></p><p id="wClock" aria-live="off"></p><button id="wLeave" class="btn" type="button" data-i="leave"></button></section>
 </main>
-<footer class="foot"><button id="flag" class="flagb" type="button" aria-label="Türk bayrağı"><svg viewBox="0 0 90 60" aria-hidden="true"><rect width="90" height="60" fill="#e30a17"/><circle cx="34" cy="30" r="12" fill="#fff"/><circle cx="38" cy="30" r="9.6" fill="#e30a17"/><polygon points="43.5,30 47.9,28.5 48,23.8 50.8,27.5 55.3,26.2 52.6,30 55.3,33.8 50.8,32.5 48,36.2 47.9,31.5" fill="#fff"/></svg></button><span class="msg" id="cheatMsg" aria-live="polite"></span></footer><div id="boom" hidden></div><aside id="sketch" class="book" hidden><div class="bi"><div class="bh"><div class="tools"><button id="penBtn" class="btn small" type="button" aria-pressed="true" data-i="pen"></button><button id="eraBtn" class="btn small" type="button" aria-pressed="false" data-i="era"></button><button id="clrBtn" class="btn small" type="button" data-i="clr"></button></div><button id="padClose" class="btn small" type="button" data-i="close"></button></div><canvas id="cv" class="cv"></canvas></div></aside>
-<aside id="book" class="book" hidden><div class="bi">
-<div class="bh"><span class="bt" data-i="book"></span><button id="bookClose" class="btn small" type="button" data-i="close"></button></div>
-<div class="paper"><ol id="rules"></ol></div></div></aside>
-
-<script>
+<footer class="foot"><button id="flag" class="flagb" type="button" aria-label="Türk bayrağı"><svg viewBox="0 0 90 60" aria-hidden="true"><rect width="90" height="60" fill="#e30a17"/><circle cx="34" cy="30" r="12" fill="#fff"/><circle cx="38" cy="30" r="9.6" fill="#e30a17"/><polygon points="43.5,30 47.9,28.5 48,23.8 50.8,27.5 55.3,26.2 52.6,30 55.3,33.8 50.8,32.5 48,36.2 47.9,31.5" fill="#fff"/></svg></button><span class="msg" id="cheatMsg" aria-live="polite"></span></footer><div id="boom" hidden></div><script>
 (function(){
 'use strict';
 var SRC='<!DOCTYPE html>\n'+document.documentElement.outerHTML;
 var $=function(i){return document.getElementById(i)};
-var T={tr:{host:'Tahta',hostSub:'Öğretmen · oda aç',join:'Katıl',joinSub:'Öğrenci · kodu gir',solo:'Tek başına oyna',hw7:'Sınıf oyunu: öğretmen Tahta ile oda açar, öğrenciler Katıl ile kodu yazar. Süre dolana kadar en çok bomba etkisiz hale getiren kazanır. Hata olursa o bomba patlar, yenisi gelir.',hostT:'Sınıf Tahtası',closeRoom:'Odayı kapat',pinLbl:'Oyun kodu',joinAt:'Telefonundan {0} adresine gir ve kodu yaz',noLan:'Telefonlar localhost\'a bağlanamaz: bilgisayarın ağ adresini kullan (konsolda yazar).',dur:'Süre (dk)',waitP:'Öğrenciler bekleniyor…',pcount:'{0} oyuncu',startRoom:'Oyunu başlat',needP:'En az 1 oyuncu katılmalı.',endNow:'Oyunu bitir',newGame:'Yeni oyun',topicsSel:'Konular ({0})',podium:'Sonuçlar',bombsN:'{0} bomba',joinT:'Oyuna katıl',pinPh:'Oyun kodu',namePh:'Takma adın',joinGo:'Katıl',badPin:'Kod 6 haneli olmalı.',needName:'Bir ad yaz.',noRoom:'Bu kodla oda bulunamadı.',full:'Oda dolu.',busy:'Sunucu meşgul, sonra dene.',noServer:'Sunucuya ulaşılamıyor. Oyunu “node index.js” ile başlatıp tarayıcıdan o adresle aç.',waitT:'Hazırsın, {0}!',waitS:'Öğretmen oyunu başlatınca bombalar gelecek.',leave:'Ayrıl',clsEnd:'Süre bitti!',clsRank:'Sıran: {0}/{1} · {2} bomba etkisiz',roomGone:'Oda kapatıldı.',story:'Hikâye',m6:'Sayı türleri',m7:'Oran-Orantı',m8:'Yüzdeler',m9:'Denklemler',m10:'Açılar',m11:'Çember',m12:'Çokgenler',m13:'Veri analizi',rg:'Soruyu çöz, doğru cevabı seç.',tpInt:'Tam sayılar',topT:'Konular',topH:'Oyunda çıkmasını istediğin konuları seç.',topics:'Konular',qp:'Kenar sayısı {0} olan çokgenin iç açıları toplamı?',qm:'Aritmetik ortalama: {0}',r6:'Doğru sonucu seç: kesir, ondalık ve kök.',w6:'Yanlış sonuç seçildi.',hw6:'Sayı türleri: kesir, ondalık ve karekök işleminin sonucunu seç.',lvl:'Seviye {0}',goalT:'Hedef: {0} bomba',play:'Oyna',locked:'Kilitli',zoomA:'Genel görünüm',zoomB:'Yakınlaş',chOn:'Hile modu açık: sonsuz para ve ölümsüzlük ∞',chOff:'Hile modu kapandı.',shop:'Market',map:'Harita',mapT:'Türkiye Haritası',mapH:'Bir şehir seç ve bombaları etkisiz hale getir. Kilitli şehirler için önceki şehri kurtar.',shopT:'Bomba Teması Marketi',using:'Kullanılıyor',use:'Kullan',poor:'Yeterli paran yok.',won:'{0} kurtarıldı!',wonT:'Şehir güvende. +2 bonus para kazandın.',next:'Sonraki',go:'Göreve başla',tn1:'Bay Kaos',tn2:'General',s1:'Hahaha! Türkiye şehirlerine bombalar yerleştiriyorum!',s2:'Dikkat! Şehirlere bombalar yerleştirildi. Bu görev sana emanet!',s3:'Bolu ile başla, sonra Ankara. Matematik en büyük silahın!',n_classic:'Klasik',n_dynamite:'Dinamit',n_gold:'Altın',n_ice:'Buz',n_neon:'Neon',lead:'Matematikle bombaları etkisiz hale getir.',start:'Oyuna başla',how:'Nasıl oynanır',copy:'Oyun kodunu kopyala',copied:'Kod kopyalandı.',cfail:'Kopyalanamadı.',back:'Menüye dön',menu:'Menü',book:'Defter',pad:'Karalama',close:'Kapat',pen:'Kalem',era:'Silgi',clr:'Temizle',
+var T={tr:{roundN:'Tur {0}/{1}',rounds:'Tur sayısı',lives:'Can',safeT:'Bu tur korundun!',safeS:'Diğerleri çözüyor…',nextRound:'Sıradaki tur: {0} sn',boomT:'Bomba patladı!',livesLeft:'Kalan can: {0}',elimT:'Elendin',elimS:'Diğerlerini izle. Oyun bitince sıralamayı göreceksin.',started:'Oyun başladı, artık katılamazsın.',aliveN:'{0} kişi hayatta',goBomb:'Bombayı çöz!',brk:'Sonuçlar',safeRounds:'{0} tur korundu',host:'Tahta',hostSub:'Öğretmen · oda aç',join:'Katıl',joinSub:'Öğrenci · kodu gir',solo:'Tek başına oyna',hw7:'Sınıf oyunu: öğretmen Tahta ile oda açar, öğrenciler Katıl ile kodu yazar. Her tur 10 saniye ve herkesin tek bir bombası var. Çözen “bu tur korundun” der. Çözemeyen ya da yanlış yapan bir can kaybeder, canı biten elenir. Son kalan kazanır.',hostT:'Sınıf Tahtası',closeRoom:'Odayı kapat',pinLbl:'Oyun kodu',joinAt:'Telefonundan {0} adresine gir ve kodu yaz',noLan:'Telefonlar localhost\'a bağlanamaz: bilgisayarın ağ adresini kullan (konsolda yazar).',dur:'Süre (dk)',waitP:'Öğrenciler bekleniyor…',pcount:'{0} oyuncu',startRoom:'Oyunu başlat',needP:'En az 1 oyuncu katılmalı.',endNow:'Oyunu bitir',newGame:'Yeni oyun',topicsSel:'Konular ({0})',podium:'Sonuçlar',bombsN:'{0} bomba',joinT:'Oyuna katıl',pinPh:'Oyun kodu',namePh:'Takma adın',joinGo:'Katıl',badPin:'Kod 6 haneli olmalı.',needName:'Bir ad yaz.',noRoom:'Bu kodla oda bulunamadı.',full:'Oda dolu.',busy:'Sunucu meşgul, sonra dene.',noServer:'Sunucuya ulaşılamıyor. Oyunu “node index.js” ile başlatıp tarayıcıdan o adresle aç.',waitT:'Hazırsın, {0}!',waitS:'Öğretmen oyunu başlatınca bombalar gelecek.',leave:'Ayrıl',clsEnd:'Oyun bitti!',clsRank:'Sıran: {0}/{1} · {2} tur korundun',roomGone:'Oda kapatıldı.',story:'Hikâye',m6:'Sayı türleri',m7:'Oran-Orantı',m8:'Yüzdeler',m9:'Denklemler',m10:'Açılar',m11:'Çember',m12:'Çokgenler',m13:'Veri analizi',rg:'Soruyu çöz, doğru cevabı seç.',tpInt:'Tam sayılar',topT:'Konular',topH:'Oyunda çıkmasını istediğin konuları seç.',topics:'Konular',qp:'Kenar sayısı {0} olan çokgenin iç açıları toplamı?',qm:'Aritmetik ortalama: {0}',r6:'Doğru sonucu seç: kesir, ondalık ve kök.',w6:'Yanlış sonuç seçildi.',hw6:'Sayı türleri: kesir, ondalık ve karekök işleminin sonucunu seç.',lvl:'Seviye {0}',goalT:'Hedef: {0} bomba',play:'Oyna',locked:'Kilitli',zoomA:'Genel görünüm',zoomB:'Yakınlaş',chOn:'Hile modu açık: sonsuz para ve ölümsüzlük ∞',chOff:'Hile modu kapandı.',shop:'Market',map:'Harita',mapT:'Türkiye Haritası',mapH:'Bir şehir seç ve bombaları etkisiz hale getir. Kilitli şehirler için önceki şehri kurtar.',shopT:'Bomba Teması Marketi',using:'Kullanılıyor',use:'Kullan',poor:'Yeterli paran yok.',won:'{0} kurtarıldı!',wonT:'Şehir güvende. +2 bonus para kazandın.',next:'Sonraki',go:'Göreve başla',tn1:'Bay Kaos',tn2:'General',s1:'Hahaha! Türkiye şehirlerine bombalar yerleştiriyorum!',s2:'Dikkat! Şehirlere bombalar yerleştirildi. Bu görev sana emanet!',s3:'Bolu ile başla, sonra Ankara. Matematik en büyük silahın!',n_classic:'Klasik',n_dynamite:'Dinamit',n_gold:'Altın',n_ice:'Buz',n_neon:'Neon',lead:'Matematikle bombaları etkisiz hale getir.',start:'Oyuna başla',how:'Nasıl oynanır',copy:'Oyun kodunu kopyala',copied:'Kod kopyalandı.',cfail:'Kopyalanamadı.',back:'Menüye dön',menu:'Menü',book:'Defter',pad:'Karalama',close:'Kapat',pen:'Kalem',era:'Silgi',clr:'Temizle',
 m1:'Teller',m2:'Tuş takımı',m3:'Şerit yazıcı',m4:'Dizi',m5:'Anahtarlar',tapeRule:'Kod = şeritteki sayı ×',send:'Kodu gönder',ok:'Onayla',
 hw0:'Tek oyuncu: 60 saniyen var, her modül +15 sn verir, her bomba 1 para kazandırır. Tek hata patlatır.',hw1:'Teller: defterdeki kuralı oku, işlemin cevabı o sayı olan teli kes.',hw2:'Tuş takımı: defterdeki soruyu çöz, kadranla işareti seç, rakamları yaz, onayla.',hw3:'Şerit: şeritteki sayıyı gösterilen çarpanla çarp, sonucu kod olarak gönder.',hw4:'Dizi: sıradaki sayıyı seç.',hw5:'Anahtarlar: açık anahtarların (4-2-1) toplamı gösterilen sayı olsun.',hwn:'Her bomba rastgele 3 modül içerir. İpuçları defterde, defter açıkken süre durmaz.',
 r1:'Cevabı {0} olan teli kes.',r2:'{0} · {1} = ? Cevabı tuş takımına yaz.',r3:'Şeritteki sayıyı çarp, kodu gönder.',r4:'Dizinin sıradaki sayısını seç.',r5:'Anahtarları {0} sayısına ayarla (4-2-1).',
 w1:'Yanlış tel kesildi.',w2:'Yanlış cevap girildi.',w3:'Yanlış kod gönderildi.',w4:'Yanlış sayı seçildi.',w5:'Anahtarlar yanlış ayarlandı.',needD:'Önce rakam gir.',needI:'Bir tam sayı yaz.',flash:'Bomba etkisiz! +1 para',boom:'Bomba patladı.',time:'Süre bitti.',stat:'Etkisiz hale getirilen bomba: {0}. Toplam para: {1}.'},
-en:{host:'Board',hostSub:'Teacher · open a room',join:'Join',joinSub:'Student · enter code',solo:'Play solo',hw7:'Class game: the teacher opens a room with Board, students type the code with Join. Whoever defuses the most bombs before time runs out wins. A mistake blows that bomb and a new one arrives.',hostT:'Class Board',closeRoom:'Close room',pinLbl:'Game PIN',joinAt:'On your phone go to {0} and enter the PIN',noLan:'Phones cannot reach localhost: use the computer\'s network address (printed in the console).',dur:'Time (min)',waitP:'Waiting for students…',pcount:'{0} players',startRoom:'Start game',needP:'At least 1 player must join.',endNow:'End game',newGame:'New game',topicsSel:'Topics ({0})',podium:'Results',bombsN:'{0} bombs',joinT:'Join a game',pinPh:'Game PIN',namePh:'Your nickname',joinGo:'Join',badPin:'The PIN has 6 digits.',needName:'Type a name.',noRoom:'No room found with that PIN.',full:'The room is full.',busy:'Server busy, try later.',noServer:'Cannot reach the server. Start the game with “node index.js” and open that address in the browser.',waitT:'You are in, {0}!',waitS:'Bombs arrive when the teacher starts the game.',leave:'Leave',clsEnd:'Time is up!',clsRank:'Your rank: {0}/{1} · {2} bombs defused',roomGone:'The room was closed.',story:'Story',m6:'Number types',m7:'Ratio',m8:'Percent',m9:'Equations',m10:'Angles',m11:'Circle',m12:'Polygons',m13:'Data',rg:'Solve the question and pick the right answer.',tpInt:'Integers',topT:'Topics',topH:'Choose the topics you want in the game.',topics:'Topics',qp:'Sum of interior angles of a {0}-sided polygon?',qm:'Mean of: {0}',r6:'Pick the right result: fraction, decimal and root.',w6:'Wrong result picked.',hw6:'Number types: pick the result of a fraction, decimal or square root.',lvl:'Level {0}',goalT:'Goal: {0} bombs',play:'Play',locked:'Locked',zoomA:'Overview',zoomB:'Zoom in',chOn:'Cheat mode on: infinite coins and immortality ∞',chOff:'Cheat mode off.',shop:'Shop',map:'Map',mapT:'Map of Turkey',mapH:'Pick a city and defuse its bombs. Free the previous city to unlock the next.',shopT:'Bomb Theme Shop',using:'In use',use:'Use',poor:'Not enough coins.',won:'{0} saved!',wonT:'The city is safe. You earned +2 bonus coins.',next:'Next',go:'Start mission',tn1:'Mr. Chaos',tn2:'General',s1:'Hahaha! I am planting bombs in the cities of Turkey!',s2:'Attention! Bombs have been planted in the cities. This mission is yours!',s3:'Start with Bolu, then Ankara. Math is your best weapon!',n_classic:'Classic',n_dynamite:'Dynamite',n_gold:'Gold',n_ice:'Ice',n_neon:'Neon',lead:'Defuse bombs with your math.',start:'Start game',how:'How to play',copy:'Copy game code',copied:'Code copied.',cfail:'Could not copy.',back:'Back to menu',menu:'Menu',book:'Notebook',pad:'Scratchpad',close:'Close',pen:'Pen',era:'Eraser',clr:'Clear',
+en:{roundN:'Round {0}/{1}',rounds:'Rounds',lives:'Lives',safeT:'You are safe this round!',safeS:'Others are still solving…',nextRound:'Next round: {0} s',boomT:'The bomb exploded!',livesLeft:'Lives left: {0}',elimT:'You are out',elimS:'Watch the others. You will see the ranking when the game ends.',started:'The game has started, you cannot join now.',aliveN:'{0} still alive',goBomb:'Defuse the bomb!',brk:'Results',safeRounds:'{0} rounds safe',host:'Board',hostSub:'Teacher · open a room',join:'Join',joinSub:'Student · enter code',solo:'Play solo',hw7:'Class game: the teacher opens a room with Board, students type the code with Join. Each round lasts 10 seconds and everyone gets one bomb. Solve it and you are safe this round. If you fail or get it wrong you lose a life, and with no lives left you are out. The last one standing wins.',hostT:'Class Board',closeRoom:'Close room',pinLbl:'Game PIN',joinAt:'On your phone go to {0} and enter the PIN',noLan:'Phones cannot reach localhost: use the computer\'s network address (printed in the console).',dur:'Time (min)',waitP:'Waiting for students…',pcount:'{0} players',startRoom:'Start game',needP:'At least 1 player must join.',endNow:'End game',newGame:'New game',topicsSel:'Topics ({0})',podium:'Results',bombsN:'{0} bombs',joinT:'Join a game',pinPh:'Game PIN',namePh:'Your nickname',joinGo:'Join',badPin:'The PIN has 6 digits.',needName:'Type a name.',noRoom:'No room found with that PIN.',full:'The room is full.',busy:'Server busy, try later.',noServer:'Cannot reach the server. Start the game with “node index.js” and open that address in the browser.',waitT:'You are in, {0}!',waitS:'Bombs arrive when the teacher starts the game.',leave:'Leave',clsEnd:'Game over!',clsRank:'Your rank: {0}/{1} · {2} rounds safe',roomGone:'The room was closed.',story:'Story',m6:'Number types',m7:'Ratio',m8:'Percent',m9:'Equations',m10:'Angles',m11:'Circle',m12:'Polygons',m13:'Data',rg:'Solve the question and pick the right answer.',tpInt:'Integers',topT:'Topics',topH:'Choose the topics you want in the game.',topics:'Topics',qp:'Sum of interior angles of a {0}-sided polygon?',qm:'Mean of: {0}',r6:'Pick the right result: fraction, decimal and root.',w6:'Wrong result picked.',hw6:'Number types: pick the result of a fraction, decimal or square root.',lvl:'Level {0}',goalT:'Goal: {0} bombs',play:'Play',locked:'Locked',zoomA:'Overview',zoomB:'Zoom in',chOn:'Cheat mode on: infinite coins and immortality ∞',chOff:'Cheat mode off.',shop:'Shop',map:'Map',mapT:'Map of Turkey',mapH:'Pick a city and defuse its bombs. Free the previous city to unlock the next.',shopT:'Bomb Theme Shop',using:'In use',use:'Use',poor:'Not enough coins.',won:'{0} saved!',wonT:'The city is safe. You earned +2 bonus coins.',next:'Next',go:'Start mission',tn1:'Mr. Chaos',tn2:'General',s1:'Hahaha! I am planting bombs in the cities of Turkey!',s2:'Attention! Bombs have been planted in the cities. This mission is yours!',s3:'Start with Bolu, then Ankara. Math is your best weapon!',n_classic:'Classic',n_dynamite:'Dynamite',n_gold:'Gold',n_ice:'Ice',n_neon:'Neon',lead:'Defuse bombs with your math.',start:'Start game',how:'How to play',copy:'Copy game code',copied:'Code copied.',cfail:'Could not copy.',back:'Back to menu',menu:'Menu',book:'Notebook',pad:'Scratchpad',close:'Close',pen:'Pen',era:'Eraser',clr:'Clear',
 m1:'Wires',m2:'Keypad',m3:'Tape printer',m4:'Sequence',m5:'Switches',tapeRule:'Code = tape number ×',send:'Send code',ok:'Confirm',
 hw0:'Solo: you get 60 seconds, each module adds 15 s, each bomb earns 1 coin. One mistake blows it up.',hw1:'Wires: read the notebook rule and cut the wire whose result matches.',hw2:'Keypad: solve the notebook problem, set the sign with the dial, type the digits, confirm.',hw3:'Tape: multiply the tape number by the shown factor and send the result.',hw4:'Sequence: pick the next number.',hw5:'Switches: the sum of the switches that are on (4-2-1) must equal the number shown.',hwn:'Each bomb has 3 random modules. Hints are in the notebook; the clock keeps running while it is open.',
 r1:'Cut the wire whose answer is {0}.',r2:'{0} · {1} = ? Enter the answer on the keypad.',r3:'Multiply the tape number and send the code.',r4:'Pick the next number of the sequence.',r5:'Set the switches to {0} (4-2-1).',
@@ -331,9 +366,7 @@ function save(){$('coins').textContent=cheat?'∞':coins;try{localStorage.setIte
 function rules(){if(!R)return;$('rules').innerHTML=act.map(function(k){var s=k===1?t('r1',[num(R.target)]):k===2?t('r2',[sg(R.a2),sg(R.b2)]):k===3?t('r3'):k===4?t('r4'):k===6?t('r6'):k>6?t('rg'):t('r5',[R.n5]);return '<li><span class="box">'+k+'</span><p>'+s+'</p></li>'}).join('')}
 function applyLang(){document.documentElement.lang=lang;document.title='Bomtik';$('lang').value=lang;
 document.querySelectorAll('[data-i]').forEach(function(e){e.textContent=t(e.dataset.i)});$('code').placeholder=lang==='tr'?'cevabı yaz':'type answer';$('jPin').placeholder=t('pinPh');$('jName').placeholder=t('namePh');rules();save()}
-function show(id){document.querySelectorAll('.screen').forEach(function(s){s.hidden=s.id!==id});document.body.classList.toggle('wide',id==='host');if(id==='end')$('toMap').hidden=!!(cls&&cls.started);if(id!=='game'){closeBook();closePad()}try{window.scrollTo(0,0)}catch(e){}}
-function openBook(){closePad();$('book').hidden=false;$('bookBtn').setAttribute('aria-expanded','true');$('app').style.paddingBottom=($('book').offsetHeight+16)+'px'}
-function closeBook(){$('book').hidden=true;$('bookBtn').setAttribute('aria-expanded','false');if($('sketch').hidden)$('app').style.paddingBottom=''}
+function show(id){document.querySelectorAll('.screen').forEach(function(s){s.hidden=s.id!==id});document.body.classList.toggle('wide',id==='host');if(id==='end')$('toMap').hidden=!!cls;document.body.classList.toggle('gaming',id==='game');if(id==='game')dockRender();else $('app').style.paddingBottom='';try{window.scrollTo(0,0)}catch(e){}}
 function newRound(){var w,i;for(;;){w=[];for(i=0;i<4;i++){var a=nz(),b=nz(),op=Math.random()<.5?'+':'-';w.push({a:a,b:b,op:op,v:op==='+'?a+b:a-b})}
 if(new Set(w.map(function(x){return x.v})).size===4)break}
 var s=rnd(1,20),d=sgn()*rnd(2,9),ans=s+4*d,seq=[0,1,2,3].map(function(j){return s+j*d});
@@ -344,20 +377,20 @@ function ex(w){return sg(w.a)+' '+(w.op==='+'?'+':MINUS)+' '+sg(w.b)}
 function swRender(){$('sws').innerHTML=[4,2,1].map(function(v,i){return '<button type="button" class="swb" data-i="'+i+'" aria-pressed="'+(sw[i]===1)+'"><span>'+v+'</span><i></i></button>'}).join('')}
 function build(){R=newRound();R.ans3=R.n*R.m;act=pool();
 st.solved={};st.digits='';st.neg=false;sw=[0,0,0];
-ALL.forEach(function(k){var m=$('m'+k);m.hidden=act.indexOf(k)<0;m.classList.remove('done','wide');m.querySelector('.mb').inert=false;$('msg'+k).textContent=''});
+ALL.forEach(function(k){var m=$('m'+k);m.hidden=act.indexOf(k)<0;m.classList.remove('done','wide');m.querySelector('.mb').inert=false;$('msg'+k).textContent='';$('msg'+k).className='msg'});
 $('m'+act[act.length-1]).classList.add('wide');
 $('wires').innerHTML=R.wires.map(function(w,i){var e=ex(w);return '<button type="button" class="wire" data-i="'+i+'" style="--c:'+COLORS[i]+'" aria-label="'+e+'"><span class="expr">'+e+'</span><span class="line"><i></i><i></i></span></button>'}).join('');
 kp();$('tape').textContent=R.n;$('mult').textContent=sg(R.m);$('code').value='';
 $('seq').textContent=R.seq.map(num).join(', ')+', ?';
 $('choices').innerHTML=R.ch.map(function(v){return '<button type="button" class="key" data-v="'+v+'">'+num(v)+'</button>'}).join('');
-$('n5').textContent=R.n5;swRender();$('q6').textContent=R.q6.q;mkG();$('ch6').innerHTML=R.q6.ch.map(function(v){return '<button type="button" class="key" data-v="'+v+'">'+v+'</button>'}).join('');rules()}
+$('n5').textContent=R.n5;swRender();$('q6').textContent=R.q6.q;mkG();$('ch6').innerHTML=R.q6.ch.map(function(v){return '<button type="button" class="key" data-v="'+v+'">'+v+'</button>'}).join('');if(cls)act.forEach(function(k){var m=$('msg'+k);if(k===1){m.textContent=t('r1',[num(R.target)]);m.className='msg hint'}else if(k===2){m.textContent=t('r2',[sg(R.a2),sg(R.b2)]);m.className='msg hint'}});rules()}
 function startGame(){clearInterval(st.iv);st.bombs=0;st.goal=GOALS[lvl];applyTheme();build();clr();updGoal();st.limit=60;st.t0=Date.now();st.over=false;show('game');tick();st.iv=setInterval(tick,200)}
-function tick(){if(cls){if(cls.done)return;var c=(cls.endAt-Date.now())/1000;$('timer').innerHTML=th(c);$('timer').classList.toggle('low',c<=20);if(c<=0)finishClass();return}if(st.over)return;var l=st.limit-(Date.now()-st.t0)/1000;$('timer').innerHTML=th(l);$('timer').classList.toggle('low',l<=20);if(l<=0){if(cheat){st.limit+=60;return}end(t('time'))}}
+function tick(){if(cls){if(!cls.rActive)return;var c=(cls.sEnd-Date.now())/1000;$('timer').innerHTML=th(Math.max(0,c));$('timer').classList.toggle('low',c<=4);if(c<=0){cls.rActive=false;clsTimeout()}return}if(st.over)return;var l=st.limit-(Date.now()-st.t0)/1000;$('timer').innerHTML=th(l);$('timer').classList.toggle('low',l<=20);if(l<=0){if(cheat){st.limit+=60;return}end(t('time'))}}
 function end(why){if(st.over)return;st.over=true;clearInterval(st.iv);
 $('endTitle').className='lose';$('endTitle').textContent=t('boom');$('endText').textContent=why;$('answers').innerHTML='<li>'+t('stat',[st.bombs,coins])+'</li>';explode(function(){show('end')})}
-function strike(k){var w=t('w'+(k>5?6:k));if(cls){clsMiss();return}if(cheat){$('msg'+k).textContent=w;return}end(w)}
+function strike(k){var w=t('w'+(k>5?6:k));if(cls){clsFail();return}if(cheat){$('msg'+k).textContent=w;return}end(w)}
 function solve(k){st.solved[k]=true;st.limit+=15;$('m'+k).classList.add('done');$('m'+k).querySelector('.mb').inert=true;$('msg'+k).textContent='';
-if(act.every(function(x){return st.solved[x]})){coins++;st.bombs++;save();updGoal();if(cls)clsReport();if(st.bombs>=st.goal)return win();$('flash').textContent=t('flash');setTimeout(function(){$('flash').textContent=''},2000);setTimeout(function(){if(!st.over)build()},700)}}
+if(act.every(function(x){return st.solved[x]})){if(cls){clsSafe();return}coins++;st.bombs++;save();updGoal();if(st.bombs>=st.goal)return win();$('flash').textContent=t('flash');setTimeout(function(){$('flash').textContent=''},2000);setTimeout(function(){if(!st.over)build()},700)}}
 $('wires').addEventListener('click',function(e){var b=e.target.closest('.wire');if(!b||b.disabled||st.over||st.solved[1])return;
 var i=+b.dataset.i;b.classList.add('cut');b.disabled=true;if(R.wires[i].v===R.target)solve(1);else strike(1)});
 function kp(){$('kpOut').textContent=(st.neg?MINUS:'+')+(st.digits||'_');$('dial').style.setProperty('--r',st.neg?'-55deg':'55deg')}
@@ -381,10 +414,13 @@ $('sws').addEventListener('click',function(e){var b=e.target.closest('.swb');if(
 $('swOk').addEventListener('click',function(){if(st.over||st.solved[5])return;if(sw[0]*4+sw[1]*2+sw[2]===R.n5)solve(5);else strike(5)});
 /* scratchpad */
 var cv=$('cv'),cx=cv.getContext('2d'),dr=false,tool='pen',lx=0,ly=0,ready=false;
-function sizeCv(){var r=cv.getBoundingClientRect(),d=window.devicePixelRatio||1;cv.width=Math.round(r.width*d);cv.height=Math.round(r.height*d);cx.setTransform(d,0,0,d,0,0);cx.lineCap='round';cx.lineJoin='round'}
+function sizeCv(){var r=cv.getBoundingClientRect(),d=window.devicePixelRatio||1,w=Math.round(r.width*d),h=Math.round(r.height*d);if(!w||!h||(cv.width===w&&cv.height===h))return;var tmp=document.createElement('canvas');tmp.width=cv.width;tmp.height=cv.height;if(cv.width&&cv.height)tmp.getContext('2d').drawImage(cv,0,0);cv.width=w;cv.height=h;cx.setTransform(d,0,0,d,0,0);cx.lineCap='round';cx.lineJoin='round';if(tmp.width&&tmp.height){cx.save();cx.setTransform(1,0,0,1,0,0);cx.drawImage(tmp,0,0);cx.restore()}}
 function clr(){cx.save();cx.setTransform(1,0,0,1,0,0);cx.clearRect(0,0,cv.width,cv.height);cx.restore()}
-function openPad(){closeBook();$('sketch').hidden=false;$('padBtn').setAttribute('aria-expanded','true');if(!ready){sizeCv();ready=true}$('app').style.paddingBottom=($('sketch').offsetHeight+16)+'px'}
-function closePad(){$('sketch').hidden=true;$('padBtn').setAttribute('aria-expanded','false');if($('book').hidden)$('app').style.paddingBottom=''}
+var mq=window.matchMedia('(min-width:960px)'),dockMode=mq.matches?'book':null;
+function dockRender(){var wide=mq.matches,m=dockMode;if(wide&&!m)m='book';$('book').hidden=m!=='book';$('sketch').hidden=m!=='pad';$('tabBook').setAttribute('aria-pressed',m==='book');$('tabPad').setAttribute('aria-pressed',m==='pad');$('dock').classList.toggle('open',!!m);if(m==='pad')sizeCv();$('app').style.paddingBottom=wide?'':($('dock').offsetHeight+24)+'px'}
+function openBook(){dockMode='book';dockRender()}function closeBook(){if(dockMode==='book'){dockMode=null;dockRender()}}
+function openPad(){dockMode='pad';dockRender()}function closePad(){if(dockMode==='pad'){dockMode=null;dockRender()}}
+function tabTo(m){dockMode=(!mq.matches&&dockMode===m)?null:m;dockRender()}
 function pt(e){var r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]}
 function stroke(a,b,c,d){cx.globalCompositeOperation=tool==='era'?'destination-out':'source-over';cx.strokeStyle='#2748a6';cx.lineWidth=tool==='era'?24:3;cx.beginPath();cx.moveTo(a,b);cx.lineTo(c,d);cx.stroke()}
 cv.addEventListener('pointerdown',function(e){dr=true;cv.setPointerCapture(e.pointerId);var p=pt(e);lx=p[0];ly=p[1];stroke(lx,ly,lx,ly);e.preventDefault()});
@@ -392,8 +428,7 @@ cv.addEventListener('pointermove',function(e){if(!dr)return;var p=pt(e);stroke(l
 ['pointerup','pointercancel'].forEach(function(n){cv.addEventListener(n,function(){dr=false})});
 function setTool(x){tool=x;$('penBtn').setAttribute('aria-pressed',x==='pen');$('eraBtn').setAttribute('aria-pressed',x==='era')}
 $('penBtn').addEventListener('click',function(){setTool('pen')});$('eraBtn').addEventListener('click',function(){setTool('era')});
-$('clrBtn').addEventListener('click',clr);$('padClose').addEventListener('click',closePad);
-$('padBtn').addEventListener('click',function(){if($('sketch').hidden)openPad();else closePad()});
+$('clrBtn').addEventListener('click',clr);$('tabBook').addEventListener('click',function(){tabTo('book')});$('tabPad').addEventListener('click',function(){tabTo('pad')});$('dockClose').addEventListener('click',function(){dockMode=null;dockRender()});window.addEventListener('resize',function(){if(!$('game').hidden)dockRender()});
 /* copy source */
 function copySrc(){var ok=function(){$('copyMsg').textContent=t('copied')},bad=function(){var ta=document.createElement('textarea');ta.value=SRC;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();var r=false;try{r=document.execCommand('copy')}catch(e){}ta.remove();$('copyMsg').textContent=t(r?'copied':'cfail')};
 if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(SRC).then(ok,bad);else bad()}
@@ -403,10 +438,9 @@ $('start').addEventListener('click',function(){mapRender();show('map')});
 $('howBtn').addEventListener('click',function(){show('how')});$('howBack').addEventListener('click',function(){show('menu')});
 $('toMenu').addEventListener('click',function(){leaveClass();show('menu')});
 $('quit').addEventListener('click',function(){st.over=true;clearInterval(st.iv);leaveClass();show('menu')});
-$('bookBtn').addEventListener('click',function(){if($('book').hidden)openBook();else closeBook()});
-$('bookClose').addEventListener('click',closeBook);
 var GOALS=[2,2,3,3,3,4,4,4,5,5],CITIES=[['Bolu',168,80],['Ankara',206,116],['Konya',194,208],['Antalya',141,252],['İzmir',34,184],['İstanbul',89,67],['Trabzon',412,68],['Erzurum',458,117],['Van',522,180],['Diyarbakır',427,206]],THEMES=[['classic',0],['dynamite',8],['gold',15],['ice',10],['neon',12]],MP='3,36 30,23 60,24 92,58 108,60 126,58 162,55 174,47 192,34 234,24 273,20 309,54 357,68 411,68 438,65 467,45 495,45 510,63 531,77 528,108 546,113 564,126 552,162 540,194 558,239 510,234 486,234 456,245 420,250 375,254 333,263 318,281 303,294 296,279 305,261 288,261 279,267 258,258 231,283 204,290 180,275 150,264 141,254 108,284 93,266 69,254 42,248 39,230 38,210 24,194 9,189 15,173 33,182 27,153 21,142 33,133 15,137 2,138 6,115 12,108 36,97 60,97 87,95 96,86 117,80 105,74 92,68 77,68 66,64 45,69 33,85 20,94 5,106 18,88 2,79 3,68';
-function updGoal(){$('goal').textContent='🎯 '+st.bombs+(cls?'':'/'+st.goal)}
+function hrt(n,m){n=Math.max(0,n||0);return '♥'.repeat(n)+'♡'.repeat(Math.max(0,(m||n)-n))}
+function updGoal(){$('goal').textContent=cls?t('roundN',[cls.round,cls.max])+'  '+hrt(cls.lives,cls.livesMax):'🎯 '+st.bombs+'/'+st.goal}
 function applyTheme(){$('bombEl').className='bomb th-'+theme;$('deco').innerHTML=DECO[theme]||''}
 function win(){st.over=true;clearInterval(st.iv);if(lvl+1>maxLv)maxLv=Math.min(lvl+1,CITIES.length);coins+=2;save();$('endTitle').className='win';$('endTitle').textContent=t('won',[CITIES[lvl][0]]);$('endText').textContent=t('wonT');$('answers').innerHTML='<li>'+t('stat',[st.bombs,coins])+'</li>';show('end')}
 
@@ -456,7 +490,7 @@ var ALL=[1,2,3,4,5,6,7,8,9,10,11,12,13],TOPICS=[['int',[1,2,3],'tpInt'],['rat',[
 var EM={classic:'💣',dynamite:'🧨',gold:'👑',ice:'❄️',neon:'⚡'};
 var DECO=(function(){var p='0,0';for(var i=0;i<20;i++)p+=' '+(i*10+5)+',20 '+(i*10+10)+',0';
 return{dynamite:'<div class="sticks"><i><b>TNT</b></i><i><b>TNT</b></i><i><b>TNT</b></i><i><b>TNT</b></i></div>',gold:'<div class="crown">👑 💎 👑</div>',ice:'<svg class="zig" viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><polygon points="'+p+'" fill="#e8f8ff"/></svg>',neon:'<div class="neonbar"><i></i><i></i><i></i><i></i><i></i></div>'}})();
-function pool(){var p=[];var use=cls&&cls.tp&&cls.tp.length?cls.tp:tp;TOPICS.forEach(function(x){if(use.indexOf(x[0])>=0)p=p.concat(x[1])});return shuf(p).slice(0,3).sort(function(a,b){return a-b})}
+function pool(){var p=[];var use=cls&&cls.tp&&cls.tp.length?cls.tp:tp;TOPICS.forEach(function(x){if(use.indexOf(x[0])>=0)p=p.concat(x[1])});return shuf(p).slice(0,cls?1:3).sort(function(a,b){return a-b})}
 function mk(q,a,c){a=''+a;var u=[];[a].concat(c).forEach(function(v){v=''+v;if(u.indexOf(v)<0)u.push(v)});u=u.slice(0,4);if(u.indexOf(a)<0)u[3]=a;while(u.length<4){var z=''+rnd(2,199);if(u.indexOf(z)<0)u.push(z)}return{q:q,ans:a,ch:shuf(u)}}
 function genQ(k){var a,b,c,x,n,d='°';
 if(k===7){a=rnd(1,5);b=rnd(a+1,9);c=rnd(2,6);x=a*c;return mk(a+'/'+b+' = x/'+(b*c)+' → x = ?',x,[x+c,x+1,Math.max(1,x-1),b*c])}
@@ -478,7 +512,7 @@ $('topBtn').addEventListener('click',function(){topRender();show('topics')});$('
 var hs=null,topRet='menu';
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function api(p,b){return fetch(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})}).then(function(r){return r.text().then(function(x){var j;try{j=JSON.parse(x)}catch(e){throw{err:'net'}}if(!r.ok)throw j;return j})},function(){throw{err:'net'}})}
-function errMsg(e){var k=e&&e.err;return k==='net'?t('noServer'):k==='noroom'?t('noRoom'):k==='full'?t('full'):k==='busy'?t('busy'):k==='noplayers'?t('needP'):k==='name'?t('needName'):t('noServer')}
+function errMsg(e){var k=e&&e.err;return k==='started'?t('started'):k==='net'?t('noServer'):k==='noroom'?t('noRoom'):k==='full'?t('full'):k==='busy'?t('busy'):k==='noplayers'?t('needP'):k==='name'?t('needName'):t('noServer')}
 /* tahta */
 function hostOpen(){$('menuMsg').textContent='';if(hs){show('host');hostRender();return}
 api('/api/create',{}).then(function(r){hs={pin:r.pin,key:r.key,lan:r.lan||[],s:null,endAt:0};hostConnect();show('host');hostRender()},function(e){$('menuMsg').textContent=errMsg(e)})}
@@ -487,7 +521,7 @@ es.onmessage=function(e){var m;try{m=JSON.parse(e.data)}catch(x){return}if(m.typ
 clearInterval(hs.tm);hs.tm=setInterval(function(){if(hs&&hs.s&&hs.s.phase==='play'&&!$('host').hidden)$('hTimer').innerHTML=th((hs.endAt-Date.now())/1000)},250)}
 function hostGone(){if(!hs)return;try{hs.es.close()}catch(e){}clearInterval(hs.tm);hs=null;show('menu')}
 function pinHtml(p){return '<b>'+p.slice(0,3).split('').join('</b><b>')+'</b><u></u><b>'+p.slice(3).split('').join('</b><b>')+'</b>'}
-function lbHtml(a,max,lim){var top=Math.max(1,a.length?a[0].bombs:1);return a.slice(0,lim).map(function(p,i){return '<li><span class="rk">'+(i+1)+'</span><span class="pn">'+esc(p.name)+'</span><span class="bar"><i style="width:'+Math.round(p.bombs/top*100)+'%"></i></span><b>'+p.bombs+'</b></li>'}).join('')}
+function lbHtml(a,lim){return a.slice(0,lim).map(function(p,i){return '<li><span class="rk">'+(i+1)+'</span><span class="pn">'+esc(p.name)+'</span><span class="hrt">'+(p.alive?hrt(p.lives,p.lives):'☠️')+'</span><b>'+p.safe+'</b></li>'}).join('')}
 function hostRender(){if(!hs)return;var s=hs.s||{phase:'lobby',players:[],n:0},ph=s.phase,pl=s.players||[];
 $('hLobby').hidden=ph!=='lobby';$('hPlay').hidden=ph!=='play';$('hDone').hidden=ph!=='done';
 $('hPin').innerHTML=pinHtml(hs.pin);
@@ -496,10 +530,15 @@ $('hUrl').innerHTML=t('joinAt',['<b>'+esc(base)+'</b>'])+(local&&!hs.lan[0]?'<sm
 $('hCount').textContent=pl.length?t('pcount',[pl.length]):t('waitP');
 $('hChips').innerHTML=pl.map(function(p){return '<span>'+esc(p.name)+'</span>'}).join('');
 $('hTop').textContent='⚙️ '+t('topicsSel',[tp.length]);
-if(ph==='play'){$('hTimer').innerHTML=th((hs.endAt-Date.now())/1000);$('hLb').innerHTML=lbHtml(pl,0,10)}
-if(ph==='done'){var m=['p2','p1','p3'],o=[1,0,2];$('hPod').innerHTML=o.map(function(i,k){var p=pl[i];return p?'<div class="'+m[k]+'"><em>'+['🥇','🥈','🥉'][i]+'</em><span>'+esc(p.name)+'</span><b>'+p.bombs+'</b></div>':''}).join('');$('hLb2').innerHTML=lbHtml(pl,0,30)}}
+if(ph==='play'){var pend=pl.filter(function(p){return p.alive&&!p.res}).length;
+$('hRound').textContent=t('roundN',[s.round,s.max])+' · '+t(s.sub==='round'?'goBomb':'brk');
+$('hTimer').innerHTML=th((hs.endAt-Date.now())/1000);
+$('hStats').textContent='🛡️ '+s.safeN+'   💥 '+s.boomN+'   ⏳ '+pend+'   ·   '+t('aliveN',[s.aliveN]);
+$('hGrid').innerHTML=pl.slice().sort(function(a,b){return a.j-b.j}).map(function(p){var c=!p.alive?'dead':p.res==='safe'?'safe':p.res==='boom'?'boom':'',ic=!p.alive?'☠️':p.res==='safe'?'🛡️':p.res==='boom'?'💥':'⏳';
+return '<div class="pc2 '+c+'"><span class="ic">'+ic+'</span><b>'+esc(p.name)+'</b><span class="hrt">'+hrt(p.lives,s.livesMax)+'</span></div>'}).join('')}
+if(ph==='done'){var m=['p2','p1','p3'],o=[1,0,2];$('hPod').innerHTML=o.map(function(i,k){var p=pl[i];return p?'<div class="'+m[k]+'"><em>'+['🥇','🥈','🥉'][i]+'</em><span>'+esc(p.name)+'</span><b>'+p.safe+'</b></div>':''}).join('');$('hLb2').innerHTML=lbHtml(pl,30)}}
 $('hostBtn').addEventListener('click',hostOpen);
-$('hStart').addEventListener('click',function(){if(!hs)return;$('hMsg').textContent='';api('/api/start',{pin:hs.pin,key:hs.key,minutes:+$('hDur').value,tp:tp}).catch(function(e){$('hMsg').textContent=errMsg(e)})});
+$('hStart').addEventListener('click',function(){if(!hs)return;$('hMsg').textContent='';api('/api/start',{pin:hs.pin,key:hs.key,rounds:+$('hRounds').value,lives:+$('hLives').value,tp:tp}).catch(function(e){$('hMsg').textContent=errMsg(e)})});
 $('hEnd').addEventListener('click',function(){if(hs)api('/api/end',{pin:hs.pin,key:hs.key}).catch(function(){})});
 $('hNew').addEventListener('click',function(){if(hs)api('/api/reset',{pin:hs.pin,key:hs.key}).catch(function(){})});
 $('hClose').addEventListener('click',function(){if(!hs){show('menu');return}var k={pin:hs.pin,key:hs.key};api('/api/close',k).catch(function(){});hostGone()});
@@ -510,25 +549,39 @@ $('joinBtn').addEventListener('click',function(){openJoin('')});$('jBack').addEv
 $('jPin').addEventListener('input',function(){this.value=this.value.replace(/\D/g,'').slice(0,6)});
 $('jForm').addEventListener('submit',function(e){e.preventDefault();var pin=$('jPin').value,nm=$('jName').value.trim();
 if(!/^\d{6}$/.test(pin)){$('jMsg').textContent=t('badPin');return}if(!nm){$('jMsg').textContent=t('needName');return}
-$('jMsg').textContent='';api('/api/join',{pin:pin,name:nm}).then(function(r){leaveClass(true);cls={pin:pin,pid:r.pid,name:r.name,started:false,done:false,bombs:0,miss:0,tp:null,last:null,endAt:0,es:null};clsConnect();wRender({n:1});show('wait')},function(e){$('jMsg').textContent=errMsg(e)})});
-function clsConnect(){var c=cls,es=new EventSource('/api/play/'+c.pin+'/'+c.pid);c.es=es;es.onmessage=function(e){if(cls!==c)return;var m;try{m=JSON.parse(e.data)}catch(x){return}if(m.type==='gone'){clsGone();return}clsState(m)}}
+$('jMsg').textContent='';api('/api/join',{pin:pin,name:nm}).then(function(r){leaveClass(true);cls={pin:pin,pid:r.pid,name:r.name,round:0,max:0,lives:0,livesMax:0,res:null,rActive:false,sEnd:0,last:null,tp:null,es:null,clk:0};clsConnect();wRender({n:1});show('wait')},function(e){$('jMsg').textContent=errMsg(e)})});
+function clsConnect(){var c=cls,es=new EventSource('/api/play/'+c.pin+'/'+c.pid);c.es=es;c.clk=setInterval(clsClock,250);es.onmessage=function(e){if(cls!==c)return;var m;try{m=JSON.parse(e.data)}catch(x){return}if(m.type==='gone'){clsGone();return}clsState(m)}}
 function clsGone(){leaveClass(true);st.over=true;clearInterval(st.iv);show('menu');$('menuMsg').textContent=t('roomGone')}
-function leaveClass(silent){if(!cls)return;var c=cls;cls=null;try{c.es&&c.es.close()}catch(e){}if(!silent)api('/api/leave',{pin:c.pin,pid:c.pid}).catch(function(){})}
-function wRender(s){if(!cls)return;$('wTitle').textContent=t('waitT',[cls.name]);$('wSub').textContent=t('waitS');$('wCount').textContent=t('pcount',[s.n||1])}
+function leaveClass(silent){if(!cls)return;var c=cls;cls=null;clearInterval(c.clk);try{c.es&&c.es.close()}catch(e){}if(!silent)api('/api/leave',{pin:c.pin,pid:c.pid}).catch(function(){})}
+function clsClock(){if(!cls||$('wait').hidden)return;var s=cls.last;if(!s||s.phase!=='play'){$('wClock').textContent='';return}var c=Math.max(0,Math.ceil((cls.sEnd-Date.now())/1000));$('wClock').textContent=s.sub==='break'?t('nextRound',[c]):'⏱ '+c}
+function wRender(s){if(!cls)return;s=s||cls.last||{};var res=cls.res||s.res,ph=s.phase,title,text='';
+if(ph==='play'||ph==='done'){
+if(s.alive===false){title='☠️ '+t('elimT');text=t('elimS')}
+else if(res==='safe'){title='🛡️ '+t('safeT');text=s.sub==='break'?'':t('safeS')}
+else if(res==='boom'){title='💥 '+t('boomT');text=t('livesLeft',[hrt(s.lives,s.livesMax)])}
+else{title=t('roundN',[s.round,s.max]);text=t('safeS')}
+$('wCount').textContent=t('aliveN',[s.aliveN||0])+'  ·  🛡️ '+(s.safeN||0)}
+else{title=t('waitT',[cls.name]);text=t('waitS');$('wCount').textContent=t('pcount',[s.n||1])}
+$('wTitle').textContent=title;$('wSub').textContent=text;clsClock()}
 $('wLeave').addEventListener('click',function(){leaveClass();show('menu')});
-function clsState(s){if(!cls)return;cls.last=s;
-if(s.phase==='lobby'){if(cls.started||cls.done){cls.started=false;cls.done=false;st.over=true;clearInterval(st.iv)}wRender(s);if($('wait').hidden)show('wait');return}
-if(s.phase==='play'){if(!cls.started)startClass(s);else cls.endAt=Date.now()+s.remaining;return}
-if(s.phase==='done'){if(cls.started&&!cls.done)finishClass();else if(!cls.started){cls.started=true;cls.done=true;cls.bombs=s.bombs||0;clsResult()}else if(!$('end').hidden)clsResult()}}
-function startClass(s){clearInterval(st.iv);cls.started=true;cls.done=false;cls.tp=s.tp;cls.endAt=Date.now()+s.remaining;cls.bombs=s.bombs||0;cls.miss=s.miss||0;
-st.bombs=cls.bombs;st.goal=Infinity;applyTheme();build();clr();updGoal();st.over=false;show('game');tick();st.iv=setInterval(tick,250)}
-function clsReport(){if(cls)api('/api/progress',{pin:cls.pin,pid:cls.pid,bombs:st.bombs,miss:cls.miss}).catch(function(){})}
-function clsMiss(){if(st.over||!cls||cls.done)return;st.over=true;cls.miss++;clsReport();var c=cls;
-explode(function(){if(cls!==c||c.done)return;st.over=false;build()})}
-function finishClass(){if(!cls||cls.done)return;cls.done=true;st.over=true;clearInterval(st.iv);closeBook();closePad();clsResult()}
+function clsState(s){if(!cls)return;cls.last=s;cls.sEnd=Date.now()+(s.remaining||0);cls.max=s.max||cls.max;cls.livesMax=s.livesMax||cls.livesMax;if(s.lives!=null)cls.lives=s.lives;
+if(s.phase==='lobby'){cls.round=0;cls.res=null;cls.rActive=false;st.over=true;clearInterval(st.iv);wRender(s);if($('wait').hidden)show('wait');return}
+if(s.phase==='play'){
+if(s.sub==='round'){
+if(cls.round!==s.round){cls.round=s.round;cls.res=s.res||null;if(s.alive&&!s.res)startRound(s);else{cls.rActive=false;wRender(s);show('wait')}}
+else if(!cls.rActive)wRender(s)}
+else{if(cls.rActive||!$('game').hidden){cls.rActive=false;st.over=true;clearInterval(st.iv)}wRender(s);if($('wait').hidden)show('wait');else if(!$('game').hidden)show('wait')}
+return}
+if(s.phase==='done'){cls.rActive=false;st.over=true;clearInterval(st.iv);clsResult()}}
+function startRound(s){clearInterval(st.iv);cls.rActive=true;cls.res=null;cls.tp=s.tp;st.bombs=0;st.goal=Infinity;applyTheme();build();clr();updGoal();st.over=false;show('game');tick();st.iv=setInterval(tick,200)}
+function clsSafe(){if(!cls||!cls.rActive)return;var c=cls;c.rActive=false;c.res='safe';st.over=true;api('/api/solve',{pin:c.pin,pid:c.pid,round:c.round}).catch(function(){});
+setTimeout(function(){if(cls===c&&c.res==='safe'&&!$('game').hidden){wRender(c.last);show('wait')}},500)}
+function clsFail(){if(!cls||!cls.rActive)return;var c=cls;c.rActive=false;c.res='boom';st.over=true;api('/api/fail',{pin:c.pin,pid:c.pid,round:c.round}).catch(function(){});
+explode(function(){if(cls===c){wRender(c.last);show('wait')}})}
+function clsTimeout(){if(!cls)return;var c=cls;c.res='boom';st.over=true;explode(function(){if(cls===c){wRender(c.last);show('wait')}})}
 function clsResult(){var s=cls.last||{};$('endTitle').className='win';$('endTitle').textContent=t('clsEnd');
-$('endText').textContent=s.rank?t('clsRank',[s.rank,s.n,st.bombs]):t('bombsN',[st.bombs]);
-$('answers').innerHTML=(s.top||[]).map(function(p,i){return '<li>'+['🥇','🥈','🥉'][i]+' <b>'+esc(p.name)+'</b> — '+p.bombs+'</li>'}).join('');show('end')}
+$('endText').textContent=s.rank?t('clsRank',[s.rank,s.n,s.safe||0]):'';
+$('answers').innerHTML=(s.top||[]).map(function(p,i){return '<li>'+['🥇','🥈','🥉'][i]+' <b>'+esc(p.name)+'</b> — '+t('safeRounds',[p.safe])+'</li>'}).join('');show('end')}
 (function(){var q=new URLSearchParams(location.search).get('pin');if(q)setTimeout(function(){openJoin(q.replace(/\D/g,'').slice(0,6))},0)})();
 applyTheme();
 applyLang();

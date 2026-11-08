@@ -4,10 +4,12 @@
  * Çalıştır:  node index.js     (varsayılan port 3000, PORT ile değiştirilebilir)
  * index.html bu dosyanın yanında durmalıdır; sunucu onu sunar.
  *
- * Akış:
+ * Sınıf oyunu (tur sistemi):
  *  - Tahta (öğretmen) /api/create ile 6 haneli kodlu oda açar.
  *  - Öğrenciler /api/join ile kodu ve takma adı gönderir.
- *  - Tahta oyunu başlatır; herkes aynı süre boyunca oynar, puan = etkisiz bomba sayısı.
+ *  - Oyun başlayınca her tur 10 saniyedir. Herkes kendi bombasını çözer.
+ *    Çözen "bu tur korundu"; çözemeyen (yanlış cevap ya da süre dolması) bir can kaybeder.
+ *  - Canı biten elenir. Tek kişi kalınca ya da tur sayısı dolunca oyun biter.
  *  - Canlı güncellemeler Server-Sent Events (SSE) ile gider.
  */
 const http = require('http');
@@ -20,6 +22,9 @@ const PORT = Number(process.env.PORT) || 3000;
 const HTML = path.join(__dirname, 'index.html');
 const TOPICS = ['int', 'rat', 'pat', 'bin', 'ratio', 'pct', 'alg', 'ang', 'circ', 'poly', 'data'];
 const MAX_PLAYERS = 100, MAX_ROOMS = 500, ROOM_TTL = 4 * 3600 * 1000;
+const ROUND_MS = 10000;   // her tur 10 saniye
+const BREAK_MS = 4000;    // turlar arası sonuç bekleme
+const GRACE_MS = 800;     // ağ gecikmesi payı
 
 const rooms = new Map();
 
@@ -59,39 +64,91 @@ const lanUrls = () => {
   }));
   return out;
 };
+const clamp = (v, a, b, d) => { v = Math.floor(Number(v)); return Number.isFinite(v) ? Math.min(b, Math.max(a, v)) : d; };
 
 /* ---------- oda durumu ---------- */
-const ranking = (room) => [...room.players.values()].sort((a, b) => b.bombs - a.bombs || a.miss - b.miss || a.joined - b.joined);
-const remaining = (room) => (room.phase === 'play' ? Math.max(0, room.endAt - Date.now()) : 0);
+// Sıralama: hayatta olanlar önde; sonra can, korunan tur sayısı, toplam çözme süresi (az olan iyi).
+// Elenenler: geç elenen önde.
+const rankSort = (a, b) => {
+  if (a.alive !== b.alive) return a.alive ? -1 : 1;
+  if (!a.alive && a.out !== b.out) return b.out - a.out;
+  return b.lives - a.lives || b.safe - a.safe || a.ms - b.ms || a.joined - b.joined;
+};
+const ranking = (room) => [...room.players.values()].sort(rankSort);
 
 function flush(room) {
   clearTimeout(room.flushT); room.flushT = null;
-  const r = ranking(room), rem = remaining(room);
-  const hostMsg = {
-    type: 'state', phase: room.phase, pin: room.pin, n: r.length, remaining: rem, duration: room.duration,
-    players: r.map((p) => ({ name: p.name, bombs: p.bombs, miss: p.miss }))
+  const r = ranking(room), now = Date.now();
+  let rem = 0;
+  if (room.phase === 'play') rem = Math.max(0, (room.sub === 'round' ? room.roundEnd : room.breakEnd) - now);
+  const aliveN = r.filter((p) => p.alive).length;
+  const safeN = r.filter((p) => p.res === 'safe').length;
+  const boomN = r.filter((p) => p.res === 'boom').length;
+  const base = {
+    type: 'state', phase: room.phase, sub: room.sub, round: room.round, max: room.max,
+    remaining: rem, n: r.length, aliveN, safeN, boomN, livesMax: room.livesInit
   };
+  const hostMsg = Object.assign({ pin: room.pin }, base, {
+    players: r.map((p) => ({ name: p.name, lives: p.lives, alive: p.alive, res: p.res, safe: p.safe, ms: p.ms, j: p.joined }))
+  });
   room.hosts.forEach((res) => sse(res, hostMsg));
-  const top = r.slice(0, 3).map((p) => ({ name: p.name, bombs: p.bombs }));
+  const top = r.slice(0, 3).map((p) => ({ name: p.name, safe: p.safe, lives: p.lives, alive: p.alive }));
   r.forEach((p, i) => {
-    if (p.res) sse(p.res, {
-      type: 'state', phase: room.phase, n: r.length, remaining: rem, tp: room.tp,
-      rank: i + 1, bombs: p.bombs, miss: p.miss, top
-    });
+    if (p.sse) sse(p.sse, Object.assign({}, base, {
+      tp: room.tp, rank: i + 1, lives: p.lives, alive: p.alive, res: p.res, safe: p.safe, top
+    }));
   });
 }
 const schedule = (room) => { if (!room.flushT) room.flushT = setTimeout(() => flush(room), 250); };
 
+function resetPlayers(room) {
+  room.players.forEach((q) => { q.lives = room.livesInit; q.alive = true; q.safe = 0; q.ms = 0; q.res = null; q.out = 0; });
+}
+function lose(room, q) {
+  q.res = 'boom';
+  q.lives = Math.max(0, q.lives - 1);
+  if (q.lives <= 0) { q.alive = false; q.out = room.round; }
+}
 function finish(room) {
-  if (room.phase !== 'play') return;
   clearTimeout(room.timer);
+  if (room.phase === 'lobby') return;
   room.phase = 'done';
+  room.sub = null;
   flush(room);
+}
+function nextRound(room) {
+  clearTimeout(room.timer);
+  room.round++;
+  room.sub = 'round';
+  room.roundStart = Date.now();
+  room.roundEnd = room.roundStart + ROUND_MS;
+  room.players.forEach((q) => { q.res = null; });
+  room.timer = setTimeout(() => endRound(room), ROUND_MS + GRACE_MS);
+  flush(room);
+}
+function endRound(room) {
+  if (room.phase !== 'play' || room.sub !== 'round') return;
+  clearTimeout(room.timer);
+  room.players.forEach((q) => { if (q.alive && !q.res) lose(room, q); });
+  const alive = [...room.players.values()].filter((q) => q.alive).length;
+  const over = (room.n0 > 1 ? alive <= 1 : alive === 0) || room.round >= room.max;
+  room.sub = 'break';
+  room.breakEnd = Date.now() + BREAK_MS;
+  room.timer = setTimeout(() => { if (over) finish(room); else nextRound(room); }, BREAK_MS);
+  flush(room);
+}
+// bir oyuncunun turu bitti mi? herkes bitirdiyse turu erken kapat
+const allResolved = (room) => [...room.players.values()].every((q) => !q.alive || q.res);
+function resolve(room, p, ok) {
+  if (room.phase !== 'play' || room.sub !== 'round' || !p.alive || p.res) return false;
+  if (ok) { p.res = 'safe'; p.safe++; p.ms += Math.min(Date.now() - room.roundStart, ROUND_MS); } else lose(room, p);
+  if (allResolved(room)) endRound(room); else schedule(room);
+  return true;
 }
 function destroy(room) {
   clearTimeout(room.timer); clearTimeout(room.flushT);
   room.hosts.forEach((res) => { sse(res, { type: 'gone' }); res.end(); });
-  room.players.forEach((p) => { if (p.res) { sse(p.res, { type: 'gone' }); p.res.end(); } });
+  room.players.forEach((p) => { if (p.sse) { sse(p.sse, { type: 'gone' }); p.sse.end(); } });
   rooms.delete(room.pin);
 }
 
@@ -127,9 +184,9 @@ async function handle(req, res) {
     const pl = room && room.players.get(m[2]);
     openSSE(req, res);
     if (!pl) { sse(res, { type: 'gone' }); return res.end(); }
-    if (pl.res && pl.res !== res) { try { pl.res.end(); } catch (e) { /* */ } }
-    pl.res = res; room.last = Date.now();
-    req.on('close', () => { if (pl.res === res) pl.res = null; });
+    if (pl.sse && pl.sse !== res) { try { pl.sse.end(); } catch (e) { /* */ } }
+    pl.sse = res; room.last = Date.now();
+    req.on('close', () => { if (pl.sse === res) pl.sse = null; });
     return flush(room);
   }
 
@@ -144,8 +201,9 @@ async function handle(req, res) {
     const pin = newPin();
     if (!pin) return send(res, 503, { err: 'busy' });
     const room = {
-      pin, key: crypto.randomBytes(8).toString('hex'), phase: 'lobby', players: new Map(), hosts: new Set(),
-      endAt: 0, duration: 300000, tp: TOPICS.slice(), timer: null, flushT: null, last: Date.now()
+      pin, key: crypto.randomBytes(8).toString('hex'), phase: 'lobby', sub: null, round: 0, max: 15, livesInit: 2, n0: 0,
+      players: new Map(), hosts: new Set(), roundStart: 0, roundEnd: 0, breakEnd: 0,
+      tp: TOPICS.slice(), timer: null, flushT: null, last: Date.now()
     };
     rooms.set(pin, room);
     return send(res, 200, { pin, key: room.key, lan: lanUrls() });
@@ -157,6 +215,7 @@ async function handle(req, res) {
   room.last = Date.now();
 
   if (p === '/api/join') {
+    if (room.phase !== 'lobby') return send(res, 409, { err: 'started' });
     const name = cleanName(b.name);
     if (!name) return send(res, 400, { err: 'name' });
     if (room.players.size >= MAX_PLAYERS) return send(res, 409, { err: 'full' });
@@ -164,23 +223,26 @@ async function handle(req, res) {
     const taken = (x) => [...room.players.values()].some((q) => q.name.toLowerCase() === x.toLowerCase());
     while (taken(nm)) nm = name.slice(0, 12) + k++;
     const id = crypto.randomBytes(8).toString('hex');
-    room.players.set(id, { id, name: nm, bombs: 0, miss: 0, lastB: 0, joined: Date.now(), res: null });
+    room.players.set(id, {
+      id, name: nm, lives: room.livesInit, alive: true, safe: 0, ms: 0, res: null, out: 0, joined: Date.now(), sse: null
+    });
     schedule(room);
     return send(res, 200, { pid: id, name: nm });
   }
   if (p === '/api/leave') {
     const pl = room.players.get(String(b.pid || ''));
-    if (pl) { if (pl.res) { try { pl.res.end(); } catch (e) { /* */ } } room.players.delete(pl.id); schedule(room); }
+    if (pl) {
+      if (pl.sse) { try { pl.sse.end(); } catch (e) { /* */ } }
+      room.players.delete(pl.id);
+      if (room.phase === 'play' && room.sub === 'round' && room.players.size && allResolved(room)) endRound(room);
+      else schedule(room);
+    }
     return send(res, 200, { ok: true });
   }
-  if (p === '/api/progress') {
+  if (p === '/api/solve' || p === '/api/fail') {
     const pl = room.players.get(String(b.pid || ''));
     if (!pl) return send(res, 404, { err: 'noplayer' });
-    if (room.phase !== 'play') return send(res, 200, { ok: true });
-    const bombs = Math.floor(Number(b.bombs)), miss = Math.floor(Number(b.miss)), now = Date.now();
-    if (bombs === pl.bombs + 1 && now - pl.lastB >= 2000) { pl.bombs = bombs; pl.lastB = now; }
-    if (miss === pl.miss + 1) pl.miss = miss;
-    schedule(room);
+    if (Number(b.round) === room.round) resolve(room, pl, p === '/api/solve');
     return send(res, 200, { ok: true });
   }
 
@@ -190,23 +252,22 @@ async function handle(req, res) {
   if (p === '/api/start') {
     if (room.phase === 'play') return send(res, 200, { ok: true });
     if (!room.players.size) return send(res, 409, { err: 'noplayers' });
-    const min = Math.min(30, Math.max(1, Math.floor(Number(b.minutes)) || 5));
     const tp = Array.isArray(b.tp) ? b.tp.filter((x) => TOPICS.includes(x)) : [];
     room.tp = tp.length ? tp : TOPICS.slice();
-    room.duration = min * 60000;
-    room.players.forEach((q) => { q.bombs = 0; q.miss = 0; q.lastB = 0; });
+    room.max = clamp(b.rounds, 3, 30, 15);
+    room.livesInit = clamp(b.lives, 1, 5, 2);
+    room.n0 = room.players.size;
+    room.round = 0;
     room.phase = 'play';
-    room.endAt = Date.now() + room.duration;
-    clearTimeout(room.timer);
-    room.timer = setTimeout(() => finish(room), room.duration + 500);
-    flush(room);
+    resetPlayers(room);
+    nextRound(room);
     return send(res, 200, { ok: true });
   }
   if (p === '/api/end') { finish(room); return send(res, 200, { ok: true }); }
   if (p === '/api/reset') {
     clearTimeout(room.timer);
-    room.phase = 'lobby';
-    room.players.forEach((q) => { q.bombs = 0; q.miss = 0; q.lastB = 0; });
+    room.phase = 'lobby'; room.sub = null; room.round = 0;
+    resetPlayers(room);
     flush(room);
     return send(res, 200, { ok: true });
   }
@@ -225,7 +286,7 @@ setInterval(() => {
   rooms.forEach((room) => {
     if (now - room.last > ROOM_TTL) return destroy(room);
     room.hosts.forEach((r) => { try { r.write(': ka\n\n'); } catch (e) { /* */ } });
-    room.players.forEach((q) => { if (q.res) { try { q.res.write(': ka\n\n'); } catch (e) { /* */ } } });
+    room.players.forEach((q) => { if (q.sse) { try { q.sse.write(': ka\n\n'); } catch (e) { /* */ } } });
   });
 }, 20000).unref();
 
