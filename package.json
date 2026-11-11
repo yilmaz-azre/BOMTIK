@@ -1,9 +1,13 @@
 {
   "name": "bomtik",
   "version": "1.0.0",
-  "description": "Bomtik - sinif icin matematik bomba etkisizlestirme oyunu",
+  "private": true,
+  "description": "Bomtik - cok oyunculu bomba oyunu",
   "main": "index.js",
-  "scripts": { "start": "node index.js" },
-  "engines": { "node": ">=16" },
-  "license": "MIT"
+  "scripts": {
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
 }
