@@ -7,7 +7,7 @@ const crypto = require('crypto');
 
 const PORT = Number(process.env.PORT) || 3000;
 const ROOT = __dirname;
-const VERSION = '2026-11-14a';
+const VERSION = '2026-11-14b';
 const MAX_BODY = 4 * 1024 * 1024;
 const BREAK_MS = 6500;
 const HOST_GRACE_MS = 30000;
